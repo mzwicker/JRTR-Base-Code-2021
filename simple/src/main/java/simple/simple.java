@@ -16,7 +16,6 @@ import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 
-import java.awt.event.*;
 import javax.vecmath.*;
 
 /**
