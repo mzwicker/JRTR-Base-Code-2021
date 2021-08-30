@@ -22,9 +22,6 @@ public class GLVertexArrayObject {
 	 * with one vertex attribute, like vertex positions, normals, or 
 	 * texture coordinates.
 	 * 
-	 * @param gl
-	 * 		the OpenGL rendering context to store the VAO
-	 * 
 	 * @param numberOfVBOs
 	 * 		the number of VBOs to be stored in the VAO
 	 */

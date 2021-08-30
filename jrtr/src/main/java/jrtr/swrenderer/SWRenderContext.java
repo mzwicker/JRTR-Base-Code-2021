@@ -8,6 +8,7 @@ import jrtr.Shader;
 import jrtr.Texture;
 import jrtr.VertexData;
 import jrtr.Material;
+import jrtr.RenderPanel;
 
 import java.awt.image.*;
 import javax.vecmath.*;
@@ -20,8 +21,8 @@ import java.util.ListIterator;
  * {@link SWRenderPanel}, which displays the output image. In project 2 
  * you will implement your own rasterizer in this class.
  * <p>
- * To use the software renderer, you will simply replace {@link GLRenderPanel} 
- * with {@link SWRenderPanel} in the user application.
+ * To use the software renderer, you will simply use a {@link RenderPanel} 
+ * derived from {@link SWRenderPanel} in the user application.
  */
 public class SWRenderContext implements RenderContext {
 

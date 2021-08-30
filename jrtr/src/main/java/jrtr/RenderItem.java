@@ -4,7 +4,7 @@ import javax.vecmath.*;
 
 /**
  * A data structure that contains a reference to a 3D object 
- * of class {@label Shape} and its transformation {@link Matrix4f}.
+ * of class {@link Shape} and its transformation {@link Matrix4f}.
  * Its purpose is to pass data from the scene manager to the 
  * renderer via the {@link SceneManagerIterator}.
  */
