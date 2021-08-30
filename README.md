@@ -7,4 +7,4 @@ Import this project into Eclipse to work with it. First create an empty folder w
 Known issues: Sometimes downloading the dependencies using Maven doesn't work correctly, leading to errors in the code after following the steps above. In this case, try removing the files in  ~\.m2\repository\org\lwjgl (where ~ is the user's home directory) and going through the steps described above again. This should solve the problem.
 
 ## Working on Assignments
-Public forks of this repository that contain solutions of any course assignments are prohibited. We recommend that you store your work in your own private repository on [GitHub](https://github.com/) or a similar platform. To work with GitHub, see the[ documentation here](https://docs.github.com/en).
+Public forks of this repository that contain solutions of any course assignments are prohibited. We recommend that you store your work in your own private repository on [GitHub](https://github.com/) or a similar platform. To work with GitHub, see the [documentation here](https://docs.github.com/en).
