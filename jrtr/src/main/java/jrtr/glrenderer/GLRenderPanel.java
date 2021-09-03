@@ -48,6 +48,8 @@ public abstract class GLRenderPanel implements RenderPanel {
 		glfwDefaultWindowHints(); // optional, the current window hints are already the default
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4); // specify OpenGL major version 4
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // specify OpenGL minor version 1
 
 		// Create the window
 		window = glfwCreateWindow(512, 512, "OpenGL Render Window", NULL, NULL);
