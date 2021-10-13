@@ -2,7 +2,6 @@ package simple;
 
 import jrtr.*;
 import jrtr.glrenderer.*;
-import jrtr.swrenderer.*;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
@@ -82,7 +81,7 @@ public class simple
 			material.shader = diffuseShader;
 			material.diffuseMap = renderContext.makeTexture();
 			try {
-//				material.diffuseMap.load("../textures/plant.jpg");
+				material.diffuseMap.load("../textures/plant.jpg");
 			} catch(Exception e) {				
 				System.out.print("Could not load texture.\n");
 				System.out.print(e.getMessage());

@@ -1,7 +1,6 @@
 package jrtr;
 
 import jrtr.glrenderer.GLRenderPanel;
-import jrtr.swrenderer.SWRenderPanel;
 
 /**
  * An interface to display images that are rendered
