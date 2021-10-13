@@ -3,7 +3,6 @@ package jrtr;
 import java.util.LinkedList;
 
 import jrtr.glrenderer.GLVertexData;
-import jrtr.swrenderer.SWVertexData;
 
 
 /**
