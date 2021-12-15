@@ -5,7 +5,7 @@
   <version>0.0.1-SNAPSHOT</version>
 
   <properties>
-	  <lwjgl.version>3.2.3</lwjgl.version>
+	  <lwjgl.version>3.3.0</lwjgl.version>
   </properties>
 
   <profiles>
@@ -130,6 +130,10 @@
 	  </dependency>
 	  <dependency>
 		  <groupId>org.lwjgl</groupId>
+		  <artifactId>lwjgl-openvr</artifactId>
+	  </dependency>
+	  <dependency>
+		  <groupId>org.lwjgl</groupId>
 		  <artifactId>lwjgl-stb</artifactId>
 	  </dependency>
 	  <dependency>
@@ -155,6 +159,11 @@
 	  <dependency>
 		  <groupId>org.lwjgl</groupId>
 		  <artifactId>lwjgl-opengl</artifactId>
+		  <classifier>${lwjgl.natives}</classifier>
+	  </dependency>
+	  <dependency>
+		  <groupId>org.lwjgl</groupId>
+		  <artifactId>lwjgl-openvr</artifactId>
 		  <classifier>${lwjgl.natives}</classifier>
 	  </dependency>
 	  <dependency>

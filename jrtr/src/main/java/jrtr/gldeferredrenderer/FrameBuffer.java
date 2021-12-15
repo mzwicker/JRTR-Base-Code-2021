@@ -1,6 +1,6 @@
 package jrtr.gldeferredrenderer;
 
-import com.jogamp.opengl.GL3;
+import static org.lwjgl.opengl.GL46.*;
 
 /**
  * A simple GLBuffer, which contains only one texture.
@@ -11,12 +11,12 @@ import com.jogamp.opengl.GL3;
 public class FrameBuffer extends GLBuffer{
 	
 	
-	public FrameBuffer(GL3 gl, int width, int height, boolean useDepthBuffer) throws RuntimeException{
-		super(gl, width, height, 1, useDepthBuffer, GL3.GL_RGB8);
+	public FrameBuffer(int width, int height, boolean useDepthBuffer) throws RuntimeException{
+		super(width, height, 1, useDepthBuffer, GL_RGB8);
 	}
 	
-	FrameBuffer(GL3 gl, int width, int height, boolean useDepthBuffer, int format){
-		super(gl, width, height, 1, useDepthBuffer, format);
+	FrameBuffer(int width, int height, boolean useDepthBuffer, int format){
+		super(width, height, 1, useDepthBuffer, format);
 	}
 	
 	/**

@@ -1,18 +1,16 @@
 package jrtr.glrenderer;
 
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.util.ListIterator;
-import java.util.Iterator;
+import java.util.*;
 
-import com.jogamp.opengl.GL3;
-import com.jogamp.opengl.GLAutoDrawable;
 import javax.vecmath.*;
+
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL46.*;
+import static org.lwjgl.openvr.VR.*;
+import static org.lwjgl.openvr.VRCompositor.*;
+
 import jrtr.*;
-import jopenvr.JOpenVRLibrary;
-import jopenvr.Texture_t;
-import jopenvr.VR_IVRCompositor_FnTable;
-import jrtr.gldeferredrenderer.FrameBuffer;
+import jrtr.gldeferredrenderer.*;
 
 /**
  * This class implements a {@link RenderContext} (a renderer) using OpenGL
@@ -21,8 +19,6 @@ import jrtr.gldeferredrenderer.FrameBuffer;
 public class VRRenderContext implements RenderContext {
 
 	private SceneManagerInterface sceneManager;
-	private GL3 gl;
-
 	/**
 	 * The buffer containing the data that is passed to the HMD. 
 	 */
@@ -40,41 +36,30 @@ public class VRRenderContext implements RenderContext {
 	 * shaders!).
 	 */
 	private int activeShaderID;
-
-	private static VR_IVRCompositor_FnTable vrcompositorFunctions;
-	private Texture_t texType;
-	private VRRenderPanel renderPanel;
 	
-	public void setOpenVR(VR_IVRCompositor_FnTable _vrcompositorFunctions, VRRenderPanel renderPanel)
+	private org.lwjgl.openvr.Texture texType;
+	private VRRenderPanel renderPanel;
+		
+	public void setOpenVR(VRRenderPanel renderPanel)
 	{
-		vrcompositorFunctions = _vrcompositorFunctions;
 		this.renderPanel = renderPanel;
 		
-		texType = new Texture_t();
-		texType.eColorSpace = JOpenVRLibrary.EColorSpace.EColorSpace_ColorSpace_Gamma;
-        texType.eType = JOpenVRLibrary.EGraphicsAPIConvention.EGraphicsAPIConvention_API_OpenGL;
-        texType.setAutoSynch(false);
-        texType.setAutoRead(false);
-        texType.setAutoWrite(false);
-        texType.handle = -1;
-        
-        //we need to disable vertical synchronisation on the mirrored monitor on screen
-        //The screen has 60 Hz and the HMD 90 Hz, thus vsync at 60Hz will block frames on the HMD periodically!
-		gl.setSwapInterval(0);
+		texType = org.lwjgl.openvr.Texture.create();
+		texType.eColorSpace(EColorSpace_ColorSpace_Gamma);
+		texType.eType(ETextureType_TextureType_OpenGL);
+		texType.handle(-1);
 		
+		//we need to disable vertical synchronisation on the mirrored monitor on screen
+		//The screen has 60 Hz and the HMD 90 Hz, thus vsync at 60Hz will block frames on the HMD periodically!
+		glfwSwapInterval(0);
 	}
 	
 	/**
-	 * This constructor is called by {@link GLRenderPanel}.
-	 * 
-	 * @param drawable
-	 *            the OpenGL rendering context. All OpenGL calls are directed to
-	 *            this object.
+	 * This constructor is called by {@link VRRenderPanel}.
 	 */
-	public VRRenderContext(GLAutoDrawable drawable) {
-		gl = drawable.getGL().getGL3();
-		gl.glEnable(GL3.GL_DEPTH_TEST);
-		gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	public VRRenderContext() {
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 		// Load and use default shader, will be used for items that do not have
 		// their own shader.
@@ -86,12 +71,10 @@ public class VRRenderContext implements RenderContext {
 			System.out.print(e.getMessage());
 		}
 		useShader(defaultShader);
-		
-		vrBuffer = new FrameBuffer(gl, drawable.getSurfaceWidth(), drawable.getSurfaceHeight(), true);
 	}
 
-	public void resize(GLAutoDrawable drawable){
-		this.vrBuffer.resize(drawable.getSurfaceWidth(), drawable.getSurfaceHeight());
+	public void resize(int width, int height){
+		this.vrBuffer.resize(width, height);
 	}
 	
 	/**
@@ -108,7 +91,7 @@ public class VRRenderContext implements RenderContext {
 	 * method traverses the scene using the scene manager and passes each object
 	 * to the rendering method.
 	 */
-	public void display(GLAutoDrawable drawable) {
+	public void display() {
 		
 		if(!renderPanel.posesReady)
 			renderPanel.waitGetPoses();
@@ -116,7 +99,7 @@ public class VRRenderContext implements RenderContext {
         // Save scene camera and projection matrices
         Matrix4f sceneCamera = new Matrix4f(this.sceneManager.getCamera().getCameraMatrix());
         Matrix4f projectionMatrix = new Matrix4f(this.sceneManager.getFrustum().getProjectionMatrix());
-        
+                
         // Render two eyes and pass to OpenVR compositor
         for(int eye=0; eye<2; eye++)
         {
@@ -135,15 +118,17 @@ public class VRRenderContext implements RenderContext {
 	        	renderPanel.headToRightEye.mul(worldToHead);
 	        	sceneManager.getCamera().setCameraMatrix(renderPanel.headToRightEye);
 	        }
-	        
+	        	        
 	        // Set projection matrix
 	        if(eye == 0)
 	        	sceneManager.getFrustum().setProjectionMatrix(renderPanel.leftProjectionMatrix);
 	        else
-	        	sceneManager.getFrustum().setProjectionMatrix(renderPanel.rightProjectionMatrix); 
-		
+	        	sceneManager.getFrustum().setProjectionMatrix(renderPanel.rightProjectionMatrix);
+	        
 			//draw scene into framebuffer
-			gl = drawable.getGL().getGL3();		
+	        if (vrBuffer == null) {
+	        	vrBuffer = new FrameBuffer(renderPanel.targetWidth, renderPanel.targetHeight, true);
+	        }
 			vrBuffer.beginWrite();
 			beginFrame();
 			SceneManagerIterator iterator = sceneManager.iterator();
@@ -159,37 +144,36 @@ public class VRRenderContext implements RenderContext {
 			// Draw the result to the screen using a bit of OpenGL hacking
 			beginFrame();
 			vrBuffer.beginRead(0);
-			gl.glBlitFramebuffer(0, 0, vrBuffer.getWidth(), vrBuffer.getHeight(),  0, 0, 
-				drawable.getSurfaceWidth(), drawable.getSurfaceHeight(), GL3.GL_COLOR_BUFFER_BIT, GL3.GL_LINEAR);
+			glBlitFramebuffer(0, 0, vrBuffer.getWidth(), vrBuffer.getHeight(),  0, 0, 
+				renderPanel.targetWidth, renderPanel.targetHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 			vrBuffer.endRead();
 			this.endFrame();
 			
 			// Pass rendered image to OpenVR compositor
-			gl.glBindFramebuffer(GL3.GL_FRAMEBUFFER, vrBuffer.frameBuffer.get(0));
-			texType.handle = vrBuffer.textures.get(0);
-			texType.write();
-	
+			glBindFramebuffer(GL_FRAMEBUFFER, vrBuffer.frameBuffer.get(0));
+			texType.handle(vrBuffer.textures.get(0));
+			
 			// Pass texture to the compositor
 			if(eye == 0) {			
-				int err	= vrcompositorFunctions.Submit.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Left, texType, null,
-		                  JOpenVRLibrary.EVRSubmitFlags.EVRSubmitFlags_Submit_Default);
+				int err	= VRCompositor_Submit(EVREye_Eye_Left, texType, null,
+		                  EVRSubmitFlags_Submit_Default);
 				if( err != 0 ) System.out.println("Submit compositor error (left): " + Integer.toString(err));
 			} else {
-				int err	= vrcompositorFunctions.Submit.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Right, texType, null,
-		                JOpenVRLibrary.EVRSubmitFlags.EVRSubmitFlags_Submit_Default);
+				int err	= VRCompositor_Submit(EVREye_Eye_Right, texType, null,
+		                EVRSubmitFlags_Submit_Default);
 				if( err != 0 ) System.out.println("Submit compositor error (right): " + Integer.toString(err));
 			}
 			
 			// Un-bind our frame buffer
-			gl.glBindFramebuffer(GL3.GL_DRAW_FRAMEBUFFER, GL3.GL_NONE);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_NONE);
         }
-		
+        		
         // Restore original scene camera and projection matrices
      	sceneManager.getCamera().setCameraMatrix(sceneCamera);
      	sceneManager.getFrustum().setProjectionMatrix(projectionMatrix);
      	
 		// Not sure if this is useful...
-		vrcompositorFunctions.PostPresentHandoff.apply();
+     	VRCompositor_PostPresentHandoff();
 		
 		// We consumed the poses, get new ones for next frame
 		renderPanel.posesReady = false;
@@ -200,7 +184,7 @@ public class VRRenderContext implements RenderContext {
 	 * drawing starts.
 	 */
 	private void beginFrame() {
-		gl.glClear(GL3.GL_COLOR_BUFFER_BIT | GL3.GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
 	/**
@@ -208,7 +192,7 @@ public class VRRenderContext implements RenderContext {
 	 * is complete.
 	 */
 	private void endFrame() {
-		gl.glFlush();
+		glFlush();
 	}
 
 	/**
@@ -250,7 +234,7 @@ public class VRRenderContext implements RenderContext {
 			int dim = e.getNumberOfComponents();
 
 			// Bind the next vertex buffer object
-			gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, vertexData.getVAO().getNextVBO());
+			glBindBuffer(GL_ARRAY_BUFFER, vertexData.getVAO().getNextVBO());
 
 			// Tell OpenGL which "in" variable in the vertex shader corresponds
 			// to the current vertex buffer object.
@@ -260,28 +244,28 @@ public class VRRenderContext implements RenderContext {
 			int attribIndex = -1;
 			switch (e.getSemantic()) {
 			case POSITION:
-				attribIndex = gl.glGetAttribLocation(activeShaderID, "position");
+				attribIndex = glGetAttribLocation(activeShaderID, "position");
 				break;
 			case NORMAL:
-				attribIndex = gl.glGetAttribLocation(activeShaderID, "normal");
+				attribIndex = glGetAttribLocation(activeShaderID, "normal");
 				break;
 			case COLOR:
-				attribIndex = gl.glGetAttribLocation(activeShaderID, "color");
+				attribIndex = glGetAttribLocation(activeShaderID, "color");
 				break;
 			case TEXCOORD:
-				attribIndex = gl.glGetAttribLocation(activeShaderID, "texcoord");
+				attribIndex = glGetAttribLocation(activeShaderID, "texcoord");
 				break;
 			}
 
-			gl.glVertexAttribPointer(attribIndex, dim, GL3.GL_FLOAT, false, 0, 0);
-			gl.glEnableVertexAttribArray(attribIndex);
+			glVertexAttribPointer(attribIndex, dim, GL_FLOAT, false, 0, 0);
+			glEnableVertexAttribArray(attribIndex);
 		}
 
 		// Render the vertex buffer objects
-		gl.glDrawElements(GL3.GL_TRIANGLES, renderItem.getShape().getVertexData().getIndices().length, GL3.GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, renderItem.getShape().getVertexData().getIndices().length, GL_UNSIGNED_INT, 0);
 
 		// we are done with this shape, bind the default vertex array
-		gl.glBindVertexArray(0);
+		glBindVertexArray(0);
 
 		cleanMaterial(renderItem.getShape().getMaterial());
 	}
@@ -296,7 +280,7 @@ public class VRRenderContext implements RenderContext {
 	private void initArrayBuffer(GLVertexData data) {
 		
 		// Make a vertex array object (VAO) for this vertex data
-		GLVertexArrayObject vao = new GLVertexArrayObject(gl, data.getElements().size() + 1);
+		GLVertexArrayObject vao = new GLVertexArrayObject(data.getElements().size() + 1);
 	//	vertexArrayObjects.add(vao);
 		data.setVAO(vao);
 		
@@ -310,24 +294,20 @@ public class VRRenderContext implements RenderContext {
 			VertexData.VertexElement e = itr.next();
 
 			// Bind the next vertex buffer object
-			gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, data.getVAO().getNextVBO());
+			glBindBuffer(GL_ARRAY_BUFFER, data.getVAO().getNextVBO());
 			// Upload vertex data
-			gl.glBufferData(GL3.GL_ARRAY_BUFFER, e.getData().length * 4,
-					FloatBuffer.wrap(e.getData()), GL3.GL_DYNAMIC_DRAW);
-
+			glBufferData(GL_ARRAY_BUFFER, e.getData(), GL_DYNAMIC_DRAW);
 		}
 
 		// bind the default vertex buffer objects
-		gl.glBindBuffer(GL3.GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		// store the indices into the last buffer
-		gl.glBindBuffer(GL3.GL_ELEMENT_ARRAY_BUFFER, data.getVAO().getNextVBO());
-		gl.glBufferData(GL3.GL_ELEMENT_ARRAY_BUFFER,
-				data.getIndices().length * 4,
-				IntBuffer.wrap(data.getIndices()), GL3.GL_DYNAMIC_DRAW);
-
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.getVAO().getNextVBO());
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.getIndices(), GL_DYNAMIC_DRAW);
+		
 		// bind the default vertex array object
-		gl.glBindVertexArray(0);
+		glBindVertexArray(0);
 	}
 
 	private void setTransformation(Matrix4f transformation) {
@@ -338,12 +318,12 @@ public class VRRenderContext implements RenderContext {
 		modelview.mul(transformation);
 
 		// Set modelview and projection matrices in shader
-		gl.glUniformMatrix4fv(
-				gl.glGetUniformLocation(activeShaderID, "modelview"), 1, false,
-				transformationToFloat16(modelview), 0);
-		gl.glUniformMatrix4fv(gl.glGetUniformLocation(activeShaderID,
-				"projection"), 1, false, transformationToFloat16(sceneManager
-				.getFrustum().getProjectionMatrix()), 0);
+		glUniformMatrix4fv(
+				glGetUniformLocation(activeShaderID, "modelview"), false,
+				transformationToFloat16(modelview));
+		glUniformMatrix4fv(glGetUniformLocation(activeShaderID,
+				"projection"), false, transformationToFloat16(sceneManager
+				.getFrustum().getProjectionMatrix()));
 
 	}
 
@@ -359,22 +339,22 @@ public class VRRenderContext implements RenderContext {
 			useShader(m.shader);
 			
 			// Pass shininess parameter to shader 
-			int id = gl.glGetUniformLocation(activeShaderID, "shininess");
+			int id = glGetUniformLocation(activeShaderID, "shininess");
 			if(id!=-1)
-				gl.glUniform1f(id, m.shininess);
+				glUniform1f(id, m.shininess);
 			else
 				System.out.print("Could not get location of uniform variable shininess\n");
 			
 			// Activate the texture, if the material has one
 			if(m.texture != null) {
 				// OpenGL calls to activate the texture 
-				gl.glActiveTexture(GL3.GL_TEXTURE0);	// Work with texture unit 0
-				gl.glEnable(GL3.GL_TEXTURE_2D);
-				gl.glBindTexture(GL3.GL_TEXTURE_2D, ((GLTexture)m.texture).getId());
-				gl.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_LINEAR);
-				gl.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_LINEAR);
-				id = gl.glGetUniformLocation(activeShaderID, "myTexture");
-				gl.glUniform1i(id, 0);	// The variable in the shader needs to be set to the desired texture unit, i.e., 0
+				glActiveTexture(GL_TEXTURE0);	// Work with texture unit 0
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, ((GLTexture)m.texture).getId());
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				id = glGetUniformLocation(activeShaderID, "myTexture");
+				glUniform1i(id, 0);	// The variable in the shader needs to be set to the desired texture unit, i.e., 0
 			}
 			
 			// Pass light source information to shader, iterate over all light sources
@@ -389,9 +369,9 @@ public class VRRenderContext implements RenderContext {
 					
 					// Pass light direction to shader
 					String lightString = "lightDirection[" + i + "]";			
-					id = gl.glGetUniformLocation(activeShaderID, lightString);
+					id = glGetUniformLocation(activeShaderID, lightString);
 					if(id!=-1)
-						gl.glUniform4f(id, l.direction.x, l.direction.y, l.direction.z, 0.f);		// Set light direction
+						glUniform4f(id, l.direction.x, l.direction.y, l.direction.z, 0.f);		// Set light direction
 					else
 						System.out.print("Could not get location of uniform variable " + lightString + "\n");
 					
@@ -399,9 +379,9 @@ public class VRRenderContext implements RenderContext {
 				}
 				
 				// Pass number of lights to shader
-				id = gl.glGetUniformLocation(activeShaderID, "nLights");
+				id = glGetUniformLocation(activeShaderID, "nLights");
 				if(id!=-1)
-					gl.glUniform1i(id, i);		// Set number of lightrs
+					glUniform1i(id, i);		// Set number of lights
 				else
 					System.out.print("Could not get location of uniform variable nLights\n");
 
@@ -421,16 +401,16 @@ public class VRRenderContext implements RenderContext {
 	public void useShader(Shader s) {
 		if (s != null) {
 			activeShaderID = ((GLShader)s).programId();
-			gl.glUseProgram(activeShaderID);
+			glUseProgram(activeShaderID);
 		}
 	}
 
 	public Shader makeShader() {
-		return new GLShader(gl);
+		return new GLShader();
 	}
 
 	public Texture makeTexture() {
-		return new GLTexture(gl);
+		return new GLTexture();
 	}
 
 	public VertexData makeVertexData(int n) {

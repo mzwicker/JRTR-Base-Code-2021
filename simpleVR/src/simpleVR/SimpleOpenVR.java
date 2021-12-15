@@ -1,13 +1,11 @@
 package simpleVR;
 
+import java.lang.reflect.*;
+
+import javax.vecmath.*;
+
 import jrtr.*;
 import jrtr.glrenderer.*;
-
-import javax.swing.*;
-
-import java.lang.reflect.Array;
-import javax.vecmath.*;
-import java.util.Timer;
 
 /**
  * Implements a simple VR application that renders to an HMD via
@@ -46,7 +44,6 @@ public class SimpleOpenVR
 	 */ 
 	public final static class SimpleVRRenderPanel extends VRRenderPanel
 	{
-		private Timer timer;	// Timer to trigger animation rendering
 		
 		/**
 		 * Initialization call-back. We initialize our renderer here.
@@ -197,13 +194,6 @@ public class SimpleOpenVR
 			resetBallPosition(); //set inital ball position
 
 		}
-		
-		public void dispose()
-		{
-			// Stop timer from triggering rendering of animation frames
-			//timer.cancel();
-			//timer.purge();
-		}
 
 		/*
 		 * Helper function to visualise the controller corresponding to the hand.
@@ -287,9 +277,9 @@ public class SimpleOpenVR
 		}
 		
 		/*
-		 * Override from base class. Triggered by 90 FPS animation.
+		 * This is called at fixed time intervals (90 FPS) by the main render loop in {@link VRRenderPanel}.
 		 */
-		public void prepareDisplay()
+		public void executeStep()
 		{
     		// Reset ball position
     		if(renderPanel.getSideTouched(renderPanel.controllerIndexHand))
@@ -303,7 +293,7 @@ public class SimpleOpenVR
     		// Get VR tracked poses. Anything using any tracking data from the VR devices must happen *after* waitGetPoses() is called!
     		renderPanel.waitGetPoses();
     		
-    		// Visualise controlling devices
+    		// Visualize controlling devices
     		Matrix4f handTrafo   = visualizeHand(renderPanel.controllerIndexHand);	
     		Matrix4f racketTrafo = visualizeRacket(renderPanel.controllerIndexRacket);	
  
@@ -313,13 +303,12 @@ public class SimpleOpenVR
     		
     		//update ball transformation matrix (right now this only shifts the ball a bit down)
     		ballTrafo.setTranslation(throwingTranslationAccum);
-    	}    	
-}
+    	}  	
+	}
 
 	
 	/**
-	 * The main function opens a 3D rendering window, constructs a simple 3D
-	 * scene, and starts a timer task to generate an animation.
+	 * The main function opens a 3D rendering window and constructs a simple 3D scene.
 	 */
 	public static void main(String[] args)
 	{		
@@ -327,17 +316,7 @@ public class SimpleOpenVR
 		// (see above) will be called back for initialization.
 		renderPanel = new SimpleVRRenderPanel();
 		
-		// Make the main window of this application and add the renderer to it
-		JFrame jframe = new JFrame("simple");
-		jframe.setSize(1680, 1680);
-		jframe.setLocationRelativeTo(null); // center of screen
-		jframe.getContentPane().add(renderPanel.getCanvas());// put the canvas into a JFrame window
-
-		// Add a mouse listener
-	  //  renderPanel.getCanvas().addMouseListener(new SimpleMouseListener());
-		renderPanel.getCanvas().setFocusable(true);
-		
-	    jframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	    jframe.setVisible(true); // show window
+		// Show the render panel and enter its event loop.
+	    renderPanel.showWindow();
 	}
 }
