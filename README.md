@@ -1,5 +1,5 @@
 # JRTR Base Code
-This project contains base code developed for an introduction to computer graphics course taught by Matthias Zwicker at the University of Maryland, College Park ([CMSC427, Computer Graphics](https://cs.umd.edu/class)). This is educational code intended for students to learn about 3D graphics programming. The framework provides a skeleton for a real-time rendering engine. 
+This project contains base code developed for an introduction to computer graphics course taught by Matthias Zwicker at the University of Maryland, College Park ([CMSC427, Computer Graphics](https://cs.umd.edu/class)). This is educational code intended for students to learn about 3D graphics programming. The framework provides a skeleton for a real-time rendering engine. It is modular to support different rendering back-ends, coming with an OpenGL-based renderer, and a renderer using OpenGL and OpenVR to render onto VR goggles.
 
 ## Getting Started
 
@@ -14,6 +14,11 @@ After importing the project, you'll need to make two adjustments in order for th
 2. Find the OpenGL version installed on your device at https://support.apple.com/en-us/HT202823. By default, this branch is set to work with OpenGL version 4.1. If you're running on an older machine with an OpenGL version other than 4.1, please modify the value of `GLFW_CONTEXT_VERSION_MAJOR` and `GLFW_CONTEXT_VERSION_MINOR` in `jrtr/src/main/java/jrtr/glrenderer/GLRenderPanel.java` to match the version on your machine.
 
 After that, you're all set! You should be able to run the base code on your machine.
+
+### For OpenVR sample
+To run the "simpleVR" project, you must have access to a Windows PC with a VR-compatible dedicated graphics card and a tethered VR headset. First, you should install [SteamVR on Steam](https://store.steampowered.com/app/250820/SteamVR/) in order to obtain the OpenVR runtime on your computer. You should try running the SteamVR app to make sure there are no issues connecting to the VR headset. After that, you should be able to run the "simpleVR" project.
+
+In some cases, your computer may default to running your Java project with your CPU's integrated graphics, which might cause nothing to render onto your VR headset's display. To fix this, you should force your computer to use the dedicated graphics card. On a computer with an NVIDIA GPU, this can be achieved using the NVIDIA Control Panel.
 
 ## Known issues
 
